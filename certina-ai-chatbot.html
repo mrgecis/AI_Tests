@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certina AI Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .sidebar-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .file-list {
+            list-style: none;
+        }
+
+        .file-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-size {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .file-remove {
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .file-remove:hover {
+            background: #cc0000;
+        }
+
+        .drop-zone {
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: #764ba2;
+            background: #f8f9ff;
+        }
+
+        .drop-zone-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone-text {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .message.bot .message-avatar {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .message-content {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.bot .message-content {
+            background: #f8f9fa;
+        }
+
+        .input-area {
+            padding: 20px 30px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 12px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .message-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 15px 30px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #999;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .share-link {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .no-files-message {
+            color: #999;
+            font-size: 13px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+            }
+
+            .container {
+                height: 95vh;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Certina AI Chatbot</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="clearAll()">Clear All</button>
+                <button class="btn btn-primary" onclick="shareChat()">Share</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Upload Files</h3>
+                    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                        <div class="drop-zone-icon">📁</div>
+                        <div class="drop-zone-text">
+                            Click or drag files here<br>
+                            <small>Supports: TXT, PDF, JSON, CSV, MD, and more</small>
+                        </div>
+                    </div>
+                    <input type="file" id="fileInput" multiple accept="*/*">
+                </div>
+
+                <div class="sidebar-section" style="flex: 1; overflow-y: auto;">
+                    <h3>Uploaded Files (<span id="fileCount">0</span>)</h3>
+                    <ul class="file-list" id="fileList">
+                        <div class="no-files-message">No files uploaded yet</div>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="chat-area">
+                <div class="messages-container" id="messagesContainer">
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-state-icon">💬</div>
+                        <h2>Welcome to Certina AI Chatbot</h2>
+                        <p>Upload files to get started, then ask questions about their content!</p>
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <input
+                        type="text"
+                        class="message-input"
+                        id="messageInput"
+                        placeholder="Ask a question about your files..."
+                        onkeypress="handleKeyPress(event)"
+                    >
+                    <button class="send-btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <div class="modal-header">Share Your Chatbot</div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
+                    Share this link with others. They'll be able to ask questions about your uploaded files.
+                </p>
+                <div class="share-link" id="shareLink"></div>
+                <p style="font-size: 12px; color: #999;">
+                    Note: The data is encoded in the URL and stored locally. Large files may result in very long URLs.
+                </p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeShareModal()">Close</button>
+                <button class="btn btn-primary" onclick="copyShareLink()">Copy Link</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let files = [];
+        let messages = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadFromURL();
+        });
+
+        function setupEventListeners() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+
+            // Drag and drop events
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                handleFiles(e.dataTransfer.files);
+            });
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+        }
+
+        async function handleFiles(fileList) {
+            for (let file of fileList) {
+                try {
+                    const content = await readFile(file);
+                    files.push({
+                        name: file.name,
+                        size: formatFileSize(file.size),
+                        content: content,
+                        type: file.type
+                    });
+                } catch (error) {
+                    console.error('Error reading file:', error);
+                    alert(`Error reading file ${file.name}: ${error.message}`);
+                }
+            }
+            updateFileList();
+            saveToLocalStorage();
+        }
+
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    resolve(e.target.result);
+                };
+
+                reader.onerror = (e) => {
+                    reject(new Error('Failed to read file'));
+                };
+
+                // Read as text for most files
+                reader.readAsText(file);
+            });
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            const fileCount = document.getElementById('fileCount');
+
+            fileCount.textContent = files.length;
+
+            if (files.length === 0) {
+                fileList.innerHTML = '<div class="no-files-message">No files uploaded yet</div>';
+                return;
+            }
+
+            fileList.innerHTML = files.map((file, index) => `
+                <li class="file-item">
+                    <div class="file-info">
+                        <div class="file-name" title="${file.name}">${file.name}</div>
+                        <div class="file-size">${file.size}</div>
+                    </div>
+                    <button class="file-remove" onclick="removeFile(${index})">✕</button>
+                </li>
+            `).join('');
+        }
+
+        function removeFile(index) {
+            files.splice(index, 1);
+            updateFileList();
+            saveToLocalStorage();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            if (files.length === 0) {
+                alert('Please upload at least one file before asking questions.');
+                return;
+            }
+
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+
+            // Generate bot response
+            setTimeout(() => {
+                const response = generateResponse(message);
+                addMessage(response, 'bot');
+                saveToLocalStorage();
+            }, 500);
+        }
+
+        function addMessage(content, type) {
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            messages.push({ content, type, timestamp: Date.now() });
+
+            const messagesContainer = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = type === 'user' ? 'U' : 'AI';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.textContent = content;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            messagesContainer.appendChild(messageDiv);
+
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function generateResponse(question) {
+            // Simple keyword-based response generation
+            const lowerQuestion = question.toLowerCase();
+
+            // Search for relevant content in files
+            let relevantContent = [];
+            files.forEach(file => {
+                const lines = file.content.split('\n');
+                lines.forEach(line => {
+                    const words = lowerQuestion.split(' ').filter(w => w.length > 3);
+                    if (words.some(word => line.toLowerCase().includes(word))) {
+                        relevantContent.push({ file: file.name, line: line.trim() });
+                    }
+                });
+            });
+
+            // File list question
+            if (lowerQuestion.includes('what files') || lowerQuestion.includes('which files') || lowerQuestion.includes('list files')) {
+                return `I have access to ${files.length} file(s): ${files.map(f => f.name).join(', ')}. You can ask me questions about their content!`;
+            }
+
+            // File count question
+            if (lowerQuestion.includes('how many files')) {
+                return `There are currently ${files.length} file(s) uploaded.`;
+            }
+
+            // Summary question
+            if (lowerQuestion.includes('summarize') || lowerQuestion.includes('summary') || lowerQuestion.includes('overview')) {
+                const totalLines = files.reduce((sum, file) => sum + file.content.split('\n').length, 0);
+                return `Here's a summary:\n\nI have ${files.length} file(s) containing approximately ${totalLines} lines of content. The files are: ${files.map(f => `${f.name} (${f.size})`).join(', ')}. Feel free to ask specific questions about their content!`;
+            }
+
+            // Content search results
+            if (relevantContent.length > 0) {
+                const uniqueFiles = [...new Set(relevantContent.map(r => r.file))];
+                const sampleContent = relevantContent.slice(0, 3).map(r =>
+                    `\n- From ${r.file}: "${r.line.substring(0, 100)}${r.line.length > 100 ? '...' : ''}"`
+                ).join('');
+
+                return `I found relevant information in ${uniqueFiles.length} file(s): ${uniqueFiles.join(', ')}.\n\nHere are some relevant excerpts:${sampleContent}\n\nWould you like me to look for something more specific?`;
+            }
+
+            // Default response
+            return `I searched through all ${files.length} uploaded file(s) but couldn't find specific information matching your question. The files I have are: ${files.map(f => f.name).join(', ')}. Try asking about specific topics, keywords, or request a summary of the files.`;
+        }
+
+        function shareChat() {
+            if (files.length === 0) {
+                alert('Please upload at least one file before sharing.');
+                return;
+            }
+
+            const data = {
+                files: files,
+                messages: messages,
+                timestamp: Date.now()
+            };
+
+            const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
+            const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
+
+            document.getElementById('shareLink').textContent = url;
+            document.getElementById('shareModal').classList.add('active');
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.remove('active');
+        }
+
+        function copyShareLink() {
+            const link = document.getElementById('shareLink').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Link copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
+        function loadFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const data = urlParams.get('data');
+
+            if (data) {
+                try {
+                    const decoded = JSON.parse(decodeURIComponent(atob(data)));
+                    files = decoded.files || [];
+                    messages = decoded.messages || [];
+
+                    updateFileList();
+
+                    // Render messages
+                    const messagesContainer = document.getElementById('messagesContainer');
+                    messagesContainer.innerHTML = '';
+
+                    if (messages.length === 0) {
+                        messagesContainer.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">💬</div>
+                                <h2>Shared Chatbot Loaded</h2>
+                                <p>You can now ask questions about the uploaded files!</p>
+                            </div>
+                        `;
+                    } else {
+                        messages.forEach(msg => {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.className = `message ${msg.type}`;
+
+                            const avatar = document.createElement('div');
+                            avatar.className = 'message-avatar';
+                            avatar.textContent = msg.type === 'user' ? 'U' : 'AI';
+
+                            const messageContent = document.createElement('div');
+                            messageContent.className = 'message-content';
+                            messageContent.textContent = msg.content;
+
+                            messageDiv.appendChild(avatar);
+                            messageDiv.appendChild(messageContent);
+                            messagesContainer.appendChild(messageDiv);
+                        });
+                    }
+
+                    saveToLocalStorage();
+                } catch (error) {
+                    console.error('Error loading shared data:', error);
+                    alert('Error loading shared chatbot. The link may be corrupted.');
+                }
+            } else {
+                loadFromLocalStorage();
+            }
+        }
+
+        function saveToLocalStorage() {
+            const data = {
+                files: files,
+                messages: messages,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('certinaChatbot', JSON.stringify(data));
+        }
+
+        function loadFromLocalStorage() {
+            const stored = localStorage.getItem('certinaChatbot');
+            if (stored) {
+                try {
+                    const data = JSON.parse(stored);
+                    files = data.files || [];
+                    messages = data.messages || [];
+                    updateFileList();
+
+                    if (messages.length > 0) {
+                        const messagesContainer = document.getElementById('messagesContainer');
+                        messagesContainer.innerHTML = '';
+                        messages.forEach(msg => {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.className = `message ${msg.type}`;
+
+                            const avatar = document.createElement('div');
+                            avatar.className = 'message-avatar';
+                            avatar.textContent = msg.type === 'user' ? 'U' : 'AI';
+
+                            const messageContent = document.createElement('div');
+                            messageContent.className = 'message-content';
+                            messageContent.textContent = msg.content;
+
+                            messageDiv.appendChild(avatar);
+                            messageDiv.appendChild(messageContent);
+                            messagesContainer.appendChild(messageDiv);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading from localStorage:', error);
+                }
+            }
+        }
+
+        function clearAll() {
+            if (confirm('Are you sure you want to clear all files and messages? This cannot be undone.')) {
+                files = [];
+                messages = [];
+                localStorage.removeItem('certinaChatbot');
+                updateFileList();
+
+                const messagesContainer = document.getElementById('messagesContainer');
+                messagesContainer.innerHTML = `
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-state-icon">💬</div>
+                        <h2>Welcome to Certina AI Chatbot</h2>
+                        <p>Upload files to get started, then ask questions about their content!</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
