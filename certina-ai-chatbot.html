@@ -663,6 +663,8 @@
 
             // Query backend for response
             try {
+                // Add thinking message and remember its position
+                const thinkingMessageIndex = messages.length;
                 addMessage('Thinking...', 'bot');
                 
                 const response = await fetch(`${API_BASE}/query`, {
@@ -673,12 +675,14 @@
                     body: JSON.stringify({ question: message }),
                 });
                 
-                // Remove "Thinking..." message
-                const messagesContainer = document.getElementById('messagesContainer');
-                const lastMessage = messagesContainer.lastChild;
-                if (lastMessage && lastMessage.textContent.includes('Thinking...')) {
-                    messagesContainer.removeChild(lastMessage);
-                    messages.pop();
+                // Remove "Thinking..." message by checking the exact index
+                if (messages[thinkingMessageIndex] && messages[thinkingMessageIndex].content === 'Thinking...') {
+                    const messagesContainer = document.getElementById('messagesContainer');
+                    const thinkingElement = messagesContainer.children[thinkingMessageIndex];
+                    if (thinkingElement) {
+                        messagesContainer.removeChild(thinkingElement);
+                    }
+                    messages.splice(thinkingMessageIndex, 1);
                 }
                 
                 if (!response.ok) {
@@ -693,12 +697,15 @@
             } catch (error) {
                 console.error('Error querying backend:', error);
                 
-                // Remove "Thinking..." message if present
-                const messagesContainer = document.getElementById('messagesContainer');
-                const lastMessage = messagesContainer.lastChild;
-                if (lastMessage && lastMessage.textContent.includes('Thinking...')) {
-                    messagesContainer.removeChild(lastMessage);
-                    messages.pop();
+                // Remove "Thinking..." message if it exists at the expected position
+                const thinkingMessageIndex = messages.findIndex(m => m.content === 'Thinking...');
+                if (thinkingMessageIndex !== -1) {
+                    const messagesContainer = document.getElementById('messagesContainer');
+                    const thinkingElement = messagesContainer.children[thinkingMessageIndex];
+                    if (thinkingElement) {
+                        messagesContainer.removeChild(thinkingElement);
+                    }
+                    messages.splice(thinkingMessageIndex, 1);
                 }
                 
                 addMessage(`Error: ${error.message}\n\nMake sure the backend server is running on ${API_BASE}`, 'bot');
