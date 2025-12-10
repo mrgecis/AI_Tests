@@ -487,6 +487,9 @@
     </div>
 
     <script>
+        // Configuration
+        const API_BASE = 'http://localhost:3000';
+        
         // Global state
         let files = [];
         let messages = [];
@@ -524,22 +527,64 @@
         }
 
         async function handleFiles(fileList) {
+            const newFiles = [];
+            
             for (let file of fileList) {
                 try {
                     const content = await readFile(file);
-                    files.push({
+                    const fileData = {
                         name: file.name,
                         size: formatFileSize(file.size),
                         content: content,
                         type: file.type
-                    });
+                    };
+                    files.push(fileData);
+                    newFiles.push(fileData);
                 } catch (error) {
                     console.error('Error reading file:', error);
                     alert(`Error reading file ${file.name}: ${error.message}`);
                 }
             }
+            
             updateFileList();
             saveToLocalStorage();
+            
+            // Send new files to backend for ingestion
+            if (newFiles.length > 0) {
+                await ingestFiles(newFiles);
+            }
+        }
+        
+        async function ingestFiles(filesToIngest) {
+            try {
+                console.log(`Sending ${filesToIngest.length} file(s) to backend for ingestion...`);
+                
+                const response = await fetch(`${API_BASE}/ingest`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        files: filesToIngest.map(f => ({
+                            name: f.name,
+                            content: f.content
+                        }))
+                    }),
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to ingest files');
+                }
+                
+                const result = await response.json();
+                console.log('Ingestion result:', result);
+                alert(`✓ Successfully indexed ${result.totalChunks} chunks from ${filesToIngest.length} file(s)`);
+                
+            } catch (error) {
+                console.error('Error ingesting files:', error);
+                alert(`Error ingesting files: ${error.message}\n\nMake sure the backend server is running on ${API_BASE}`);
+            }
         }
 
         function readFile(file) {
@@ -601,7 +646,7 @@
             }
         }
 
-        function sendMessage() {
+        async function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
 
@@ -616,12 +661,49 @@
             addMessage(message, 'user');
             input.value = '';
 
-            // Generate bot response
-            setTimeout(() => {
-                const response = generateResponse(message);
-                addMessage(response, 'bot');
+            // Query backend for response
+            try {
+                addMessage('Thinking...', 'bot');
+                
+                const response = await fetch(`${API_BASE}/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: message }),
+                });
+                
+                // Remove "Thinking..." message
+                const messagesContainer = document.getElementById('messagesContainer');
+                const lastMessage = messagesContainer.lastChild;
+                if (lastMessage && lastMessage.textContent.includes('Thinking...')) {
+                    messagesContainer.removeChild(lastMessage);
+                    messages.pop();
+                }
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to get response');
+                }
+                
+                const result = await response.json();
+                addMessage(result.answer, 'bot');
                 saveToLocalStorage();
-            }, 500);
+                
+            } catch (error) {
+                console.error('Error querying backend:', error);
+                
+                // Remove "Thinking..." message if present
+                const messagesContainer = document.getElementById('messagesContainer');
+                const lastMessage = messagesContainer.lastChild;
+                if (lastMessage && lastMessage.textContent.includes('Thinking...')) {
+                    messagesContainer.removeChild(lastMessage);
+                    messages.pop();
+                }
+                
+                addMessage(`Error: ${error.message}\n\nMake sure the backend server is running on ${API_BASE}`, 'bot');
+                saveToLocalStorage();
+            }
         }
 
         function addMessage(content, type) {
@@ -652,51 +734,11 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        function generateResponse(question) {
-            // Simple keyword-based response generation
-            const lowerQuestion = question.toLowerCase();
-
-            // Search for relevant content in files
-            let relevantContent = [];
-            files.forEach(file => {
-                const lines = file.content.split('\n');
-                lines.forEach(line => {
-                    const words = lowerQuestion.split(' ').filter(w => w.length > 3);
-                    if (words.some(word => line.toLowerCase().includes(word))) {
-                        relevantContent.push({ file: file.name, line: line.trim() });
-                    }
-                });
-            });
-
-            // File list question
-            if (lowerQuestion.includes('what files') || lowerQuestion.includes('which files') || lowerQuestion.includes('list files')) {
-                return `I have access to ${files.length} file(s): ${files.map(f => f.name).join(', ')}. You can ask me questions about their content!`;
-            }
-
-            // File count question
-            if (lowerQuestion.includes('how many files')) {
-                return `There are currently ${files.length} file(s) uploaded.`;
-            }
-
-            // Summary question
-            if (lowerQuestion.includes('summarize') || lowerQuestion.includes('summary') || lowerQuestion.includes('overview')) {
-                const totalLines = files.reduce((sum, file) => sum + file.content.split('\n').length, 0);
-                return `Here's a summary:\n\nI have ${files.length} file(s) containing approximately ${totalLines} lines of content. The files are: ${files.map(f => `${f.name} (${f.size})`).join(', ')}. Feel free to ask specific questions about their content!`;
-            }
-
-            // Content search results
-            if (relevantContent.length > 0) {
-                const uniqueFiles = [...new Set(relevantContent.map(r => r.file))];
-                const sampleContent = relevantContent.slice(0, 3).map(r =>
-                    `\n- From ${r.file}: "${r.line.substring(0, 100)}${r.line.length > 100 ? '...' : ''}"`
-                ).join('');
-
-                return `I found relevant information in ${uniqueFiles.length} file(s): ${uniqueFiles.join(', ')}.\n\nHere are some relevant excerpts:${sampleContent}\n\nWould you like me to look for something more specific?`;
-            }
-
-            // Default response
-            return `I searched through all ${files.length} uploaded file(s) but couldn't find specific information matching your question. The files I have are: ${files.map(f => f.name).join(', ')}. Try asking about specific topics, keywords, or request a summary of the files.`;
-        }
+        // Old keyword-based response function (disabled - now using backend RAG)
+        // function generateResponse(question) {
+        //     // This function has been replaced by backend API calls
+        //     // See sendMessage() which now calls ${API_BASE}/query
+        // }
 
         function shareChat() {
             if (files.length === 0) {
