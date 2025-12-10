@@ -10,10 +10,15 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI (will be null if no API key is provided)
+let openai = null;
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+} else {
+  console.warn('[WARNING] OPENAI_API_KEY not set - API endpoints will not work');
+}
 
 // In-memory vector index
 let vectorIndex = [];
@@ -50,6 +55,10 @@ function cosineSimilarity(a, b) {
 // POST /ingest - Receive files, chunk, compute embeddings, store in index
 app.post('/ingest', async (req, res) => {
   try {
+    if (!openai) {
+      return res.status(503).json({ error: 'OpenAI API key not configured. Please set OPENAI_API_KEY in .env file.' });
+    }
+    
     const { files } = req.body;
     
     if (!files || !Array.isArray(files) || files.length === 0) {
@@ -122,6 +131,10 @@ app.post('/ingest', async (req, res) => {
 // POST /query - Receive question, find similar chunks, call Chat Completion
 app.post('/query', async (req, res) => {
   try {
+    if (!openai) {
+      return res.status(503).json({ error: 'OpenAI API key not configured. Please set OPENAI_API_KEY in .env file.' });
+    }
+    
     const { question } = req.body;
     
     if (!question) {
