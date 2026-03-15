@@ -1,0 +1,29 @@
+# Environment secrets
+.env
+token_*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# ChromaDB data
+data/
+
+# Output files (user data)
+output/
+input/
+matched.csv
+requested.csv
+unmatched.csv
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
